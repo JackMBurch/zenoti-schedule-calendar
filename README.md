@@ -1,36 +1,74 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Zenoti Schedule Calendar
+
+Zenoti schedule screenshots → OCR → review/edit → publish → **subscribable** iCal feed.
 
 ## Getting Started
 
-First, run the development server:
+### Local dev
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+cp .env.example .env
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Environment variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Copy `.env.example` to `.env` and set values:
 
-## Learn More
+- `MASTER_PASSWORD`: password for portal login
+- `SESSION_SECRET`: secret for signing session cookie
+- `FEED_TOKEN`: token embedded in the iCal feed URL
+- `DEFAULT_TIMEZONE` (optional): default schedule timezone (IANA name, e.g. `America/New_York`)
 
-To learn more about Next.js, take a look at the following resources:
+### Web portal
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Upload screenshots at `/upload`
+- Review/edit OCR at `/review`
+- Publish to the stored schedule (file-backed under `data/`)
+- Manually edit the published calendar at `/calendar`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### iCal feed
 
-## Deploy on Vercel
+The feed is served from:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `/api/feed/<FEED_TOKEN>/ics`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Anyone with the feed URL can read it.
+
+### Data storage (no DB)
+
+Published schedule data is stored locally under `data/` (gitignored). This is designed to be mounted as a persistent volume in Docker.
+
+### Docker (production)
+
+Create a `.env` file (for Docker Compose) and set the required env vars:
+
+```bash
+cp .env.example .env
+```
+
+Then build and run:
+
+```bash
+docker compose up --build
+```
+
+- Data persists in the `zsc_data` volume mounted at `/app/data`.
+- The app is published on `http://localhost:3020` by default (see `docker-compose.yml`).
+- Rotating `SESSION_SECRET` invalidates all sessions (forces re-login).
+- Rotating `FEED_TOKEN` changes the feed URL (clients must re-subscribe).
+
+## Tech
+
+- Next.js (App Router) + TypeScript
+- TailwindCSS
+- Zod for validation
+- `sharp` + `tesseract.js` for OCR
+- Luxon for timezone-safe iCal generation
+
+## Notes
+
+- The portal is protected by a single master password (no user accounts).
+- The iCal feed is readonly and accessed via a tokenized URL.

@@ -1,3 +1,4 @@
-ignoredBuiltDependencies:
+onlyBuiltDependencies:
   - sharp
+  - tesseract.js
   - unrs-resolver

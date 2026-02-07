@@ -1,65 +1,108 @@
-import Image from "next/image";
+import Link from 'next/link';
 
-export default function Home() {
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { SubscribeToCalendarButton } from '@/components/SubscribeToCalendarButton';
+import { isAuthed } from '@/lib/auth/isAuthed';
+
+function getFeedUrl(): string | null {
+  const token = process.env.FEED_TOKEN;
+  if (!token || token.trim().length === 0) return null;
+  return `/api/feed/${encodeURIComponent(token)}/ics`;
+}
+
+export default async function Home() {
+  const feedUrl = getFeedUrl();
+  const authed = await isAuthed();
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="grid gap-8">
+      <section className="pt-4">
+        <h1 className="text-balance text-3xl font-semibold tracking-tight text-zinc-50 sm:text-4xl">
+          Turn Zenoti schedule screenshots into a live calendar feed.
+        </h1>
+        <p className="mt-3 max-w-2xl text-pretty text-sm leading-6 text-zinc-300 sm:text-base">
+          Upload screenshots, OCR parses your shifts, you review/edit for
+          accuracy, then we publish a subscribable iCal feed for Google
+          Calendar, Apple Calendar, and more.
+        </p>
+      </section>
+
+      {!authed ? (
+        <div className="rounded-xl border border-white/10 bg-white/5 px-5 py-4">
+          <div className="text-sm font-semibold text-zinc-50">
+            Login required
+          </div>
+          <div className="mt-1 text-sm text-zinc-300">
+            You need to log in with the master password to upload screenshots
+            and publish.
+          </div>
+          <div className="mt-4">
+            <Link href="/login">
+              <Button>Go to login</Button>
+            </Link>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      ) : null}
+
+      {authed ? (
+        <section className="grid gap-4 sm:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-zinc-50">Upload screenshots</CardTitle>
+              <CardDescription>
+                Read your Zenoti weekly schedule screenshots with OCR.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <Link href="/upload">
+                <Button>Upload screenshots</Button>
+              </Link>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-zinc-50">Readonly iCal feed</CardTitle>
+              <CardDescription>
+                Subscribe once; your calendar stays updated.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <div className="flex flex-col gap-3">
+                <SubscribeToCalendarButton feedPath={feedUrl} />
+                {!feedUrl ? (
+                  <div className="text-xs text-zinc-400">
+                    Set{' '}
+                    <span className="font-mono text-zinc-100">FEED_TOKEN</span>{' '}
+                    to enable subscribing.
+                  </div>
+                ) : null}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-zinc-50">Calendar editor</CardTitle>
+              <CardDescription>
+                View and manually fix published days and times.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <Link href="/calendar">
+                <Button variant="secondary">Open editor</Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </section>
+      ) : null}
     </div>
   );
 }

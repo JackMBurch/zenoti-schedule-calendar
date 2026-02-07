@@ -1,0 +1,15 @@
+services:
+  app:
+    build: .
+    ports:
+      - '3020:3020'
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+    volumes:
+      - zsc_data:/app/data
+    restart: unless-stopped
+
+volumes:
+  zsc_data:
