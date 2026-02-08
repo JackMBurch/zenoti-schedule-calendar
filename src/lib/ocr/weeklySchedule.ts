@@ -421,7 +421,8 @@ async function recognizeText(params: {
 }
 
 export async function extractWeeklyScheduleDraftShifts(params: {
-  image: Buffer;
+  imageDetection: Buffer;
+  imageText: Buffer;
   timezone: string;
   source: string;
   worker: MinimalTesseractWorker;
@@ -464,7 +465,7 @@ export async function extractWeeklyScheduleDraftShifts(params: {
     }>;
   };
 }> {
-  const meta = await sharp(params.image).metadata();
+  const meta = await sharp(params.imageDetection).metadata();
   const width = meta.width;
   const height = meta.height;
   if (!width || !height) {
@@ -499,7 +500,10 @@ export async function extractWeeklyScheduleDraftShifts(params: {
     width,
     height: Math.round(height * 0.12),
   };
-  const headerCrop = await cropBuffer({ image: params.image, ...headerRect });
+  const headerCrop = await cropBuffer({
+    image: params.imageText,
+    ...headerRect,
+  });
 
   const headerOcr = await recognizeText({
     worker: params.worker,
@@ -533,7 +537,11 @@ export async function extractWeeklyScheduleDraftShifts(params: {
   const listBottom = Math.round(height * 0.86);
   const listHeight = Math.max(1, listBottom - listTop);
   const listRect = { left: 0, top: listTop, width, height: listHeight };
-  const listCrop = await cropBuffer({ image: params.image, ...listRect });
+  const listCropDetection = await cropBuffer({
+    image: params.imageDetection,
+    ...listRect,
+  });
+  const listCropText = await cropBuffer({ image: params.imageText, ...listRect });
 
   const rightRect = {
     left: Math.round(width * 0.7),
@@ -541,7 +549,7 @@ export async function extractWeeklyScheduleDraftShifts(params: {
     width: Math.round(width * 0.3),
     height: listHeight,
   };
-  const rightCol = await cropBuffer({ image: listCrop, ...rightRect });
+  const rightCol = await cropBuffer({ image: listCropDetection, ...rightRect });
 
   const rightOcr = await recognizeText({
     worker: params.worker,
@@ -666,7 +674,7 @@ export async function extractWeeklyScheduleDraftShifts(params: {
       height: Math.round(bandHeight * 0.56),
     };
     const dayCrop = await cropBuffer({
-      image: listCrop,
+      image: listCropText,
       ...dayRect,
     });
 
@@ -690,7 +698,7 @@ export async function extractWeeklyScheduleDraftShifts(params: {
       height: Math.round(bandHeight * 0.24),
     };
     const monthCrop = await cropBuffer({
-      image: listCrop,
+      image: listCropText,
       ...monthRect,
     });
     const monthOcr = await recognizeText({
@@ -709,7 +717,7 @@ export async function extractWeeklyScheduleDraftShifts(params: {
       height: Math.round(bandHeight * 0.26),
     };
     const weekdayCrop = await cropBuffer({
-      image: listCrop,
+      image: listCropText,
       ...weekdayRect,
     });
     const weekdayOcr = await recognizeText({
@@ -728,7 +736,7 @@ export async function extractWeeklyScheduleDraftShifts(params: {
       height: Math.round(bandHeight * 0.36),
     };
     const timeCrop = await cropBuffer({
-      image: listCrop,
+      image: listCropText,
       ...timeRect,
     });
     const timeOcr = await recognizeText({

@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 import { createWorker, PSM } from 'tesseract.js';
 
 import { getDefaultTimezone } from '@/lib/env';
-import { preprocessForOcr } from '@/lib/ocr/preprocess';
+import { preprocessScreenshotForOcr } from '@/lib/ocr/preprocess';
 import { parseDraftShiftsFromOcrText } from '@/lib/ocr/parse';
 import { extractWeeklyScheduleDraftShifts } from '@/lib/ocr/weeklySchedule';
 import { maybeCleanupDrafts } from '@/lib/drafts/cleanup';
@@ -49,10 +49,11 @@ export async function POST(request: Request) {
     for (const file of fileEntries) {
       const ab = await file.arrayBuffer();
       const input = Buffer.from(ab);
-      const preprocessed = await preprocessForOcr(input);
+      const preprocessed = await preprocessScreenshotForOcr(input);
 
       const structured = await extractWeeklyScheduleDraftShifts({
-        image: preprocessed,
+        imageDetection: preprocessed.detection,
+        imageText: preprocessed.text,
         timezone,
         source: batchId,
         worker,
@@ -76,7 +77,7 @@ export async function POST(request: Request) {
           user_defined_dpi: '300',
         });
 
-        const result = await worker.recognize(preprocessed);
+        const result = await worker.recognize(preprocessed.text);
         text = result.data.text ?? '';
         shifts = parseDraftShiftsFromOcrText({
           text,
