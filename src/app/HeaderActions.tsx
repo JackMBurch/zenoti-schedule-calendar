@@ -9,7 +9,7 @@ export function HeaderActions({ authed }: { authed: boolean }) {
   if (!authed) {
     return (
       <Link href="/login">
-        <Button variant="secondary" size="sm">
+        <Button variant="secondary" size="sm" className="whitespace-nowrap">
           Log in
         </Button>
       </Link>
@@ -17,14 +17,14 @@ export function HeaderActions({ authed }: { authed: boolean }) {
   }
 
   return (
-    <div className="flex items-center gap-3">
-      <Link href="/">
-        <Button variant="secondary" size="sm">
-          Home
-        </Button>
-      </Link>
+    <div className="flex flex-nowrap items-center gap-3">
       <form method="POST" action="/api/auth/logout">
-        <Button variant="secondary" size="sm" type="submit">
+        <Button
+          variant="secondary"
+          size="sm"
+          type="submit"
+          className="whitespace-nowrap"
+        >
           Log out
         </Button>
       </form>
@@ -33,7 +33,7 @@ export function HeaderActions({ authed }: { authed: boolean }) {
         alt="Profile"
         width={40}
         height={40}
-        className="h-10 w-10 rounded-full border border-white/10 object-cover"
+        className="h-8 w-8 rounded-full border border-white/10 object-cover sm:h-10 sm:w-10"
       />
     </div>
   );
