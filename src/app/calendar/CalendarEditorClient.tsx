@@ -213,15 +213,15 @@ export function CalendarEditorClient({
         <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="secondary"
-            onClick={() => setMonth((m) => addMonths(m, 1))}
-          >
-            {formatMonthLong(addMonths(month, 1))}
-          </Button>
-          <Button
-            variant="secondary"
             onClick={() => setMonth((m) => addMonths(m, -1))}
           >
             {formatMonthLong(addMonths(month, -1))}
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => setMonth((m) => addMonths(m, 1))}
+          >
+            {formatMonthLong(addMonths(month, 1))}
           </Button>
           <Button variant="secondary" onClick={addEvent}>
             Add day
