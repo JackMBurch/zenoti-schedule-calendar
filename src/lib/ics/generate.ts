@@ -29,6 +29,11 @@ function formatUtc(dt: DateTime): string {
   return dt.toUTC().toFormat("yyyyMMdd'T'HHmmss'Z'");
 }
 
+function formatTimeForTitle(dt: DateTime): string {
+  // Keep it compact (e.g. "10" or "10:30") to match titles like "10-3 Work shift".
+  return dt.minute === 0 ? dt.toFormat('h') : dt.toFormat('h:mm');
+}
+
 function sortKey(e: ScheduleEvent): string {
   return `${e.date}T${e.startTime}`;
 }
@@ -68,7 +73,7 @@ export function generateIcs(params: {
       : now;
 
     const uid = `${ev.id}@zenoti-schedule-calendar.local`;
-    const summary = 'Work shift';
+    const summary = `${formatTimeForTitle(startLocal)}-${formatTimeForTitle(endLocal)} Work shift`;
     const description = `Source: ${ev.source}\\nTimezone: ${ev.timezone}`;
 
     lines.push(
