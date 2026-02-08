@@ -125,6 +125,54 @@ function weekdayToLuxon(weekday: string): number | null {
   return map[w] ?? null;
 }
 
+function dateFromWeekStartAndWeekday(params: {
+  weekStart: { year: number; month: number; day: number };
+  weekday: string;
+  timezone: string;
+}): string | null {
+  const base = DateTime.fromObject(
+    {
+      year: params.weekStart.year,
+      month: params.weekStart.month,
+      day: params.weekStart.day,
+    },
+    { zone: params.timezone },
+  );
+  const target = weekdayToLuxon(params.weekday);
+  if (!base.isValid || !target) return null;
+  const delta = (target - base.weekday + 7) % 7;
+  return base.plus({ days: delta }).toISODate();
+}
+
+function weekdayMatchesDate(params: {
+  date: string;
+  weekday: string;
+  timezone: string;
+}): boolean {
+  const dt = DateTime.fromISO(params.date, { zone: params.timezone });
+  const target = weekdayToLuxon(params.weekday);
+  return Boolean(dt.isValid && target && dt.weekday === target);
+}
+
+function isWithinWeek(params: {
+  date: string;
+  weekStart: { year: number; month: number; day: number };
+  timezone: string;
+}): boolean {
+  const dt = DateTime.fromISO(params.date, { zone: params.timezone });
+  const base = DateTime.fromObject(
+    {
+      year: params.weekStart.year,
+      month: params.weekStart.month,
+      day: params.weekStart.day,
+    },
+    { zone: params.timezone },
+  );
+  if (!dt.isValid || !base.isValid) return false;
+  const end = base.plus({ days: 6 }).endOf('day');
+  return dt >= base.startOf('day') && dt <= end;
+}
+
 function parseYearFromText(text: string): number | null {
   const match = text.match(/\b(20\d{2})\b/);
   if (!match) return null;
@@ -730,17 +778,38 @@ export async function extractWeeklyScheduleDraftShifts(params: {
     // - Prefer exact day+month (from left column).
     // - If day is missing, try header week start + weekday label.
     let resolvedDate: string | null = null;
-    if (day && month) {
-      resolvedDate = `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${day}`;
-    } else if (weekStart && weekday) {
-      const base = DateTime.fromObject(
-        { year: weekStart.year, month: weekStart.month, day: weekStart.day },
-        { zone: params.timezone },
-      );
-      const target = weekdayToLuxon(weekday);
-      if (base.isValid && target) {
-        const delta = (target - base.weekday + 7) % 7;
-        resolvedDate = base.plus({ days: delta }).toISODate();
+    const dateFromDayMonth =
+      day && month
+        ? `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${day}`
+        : null;
+    const dateFromWeekday =
+      weekStart && weekday
+        ? dateFromWeekStartAndWeekday({
+            weekStart,
+            weekday,
+            timezone: params.timezone,
+          })
+        : null;
+
+    resolvedDate = dateFromDayMonth ?? dateFromWeekday;
+
+    // Robustness: if OCR misreads the day number (e.g. "08" -> "03"), it can
+    // conflict with the weekday label and/or the header’s week range. When we
+    // have a header week start and a weekday label, prefer the weekday-derived
+    // date if the day-derived date looks inconsistent.
+    if (resolvedDate && dateFromDayMonth && dateFromWeekday && weekStart && weekday) {
+      const weekdayOk = weekdayMatchesDate({
+        date: dateFromDayMonth,
+        weekday,
+        timezone: params.timezone,
+      });
+      const inWeek = isWithinWeek({
+        date: dateFromDayMonth,
+        weekStart,
+        timezone: params.timezone,
+      });
+      if (!weekdayOk || !inWeek) {
+        resolvedDate = dateFromWeekday;
       }
     }
 
