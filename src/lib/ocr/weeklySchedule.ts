@@ -549,11 +549,15 @@ export async function extractWeeklyScheduleDraftShifts(params: {
     width: Math.round(width * 0.3),
     height: listHeight,
   };
-  const rightCol = await cropBuffer({ image: listCropDetection, ...rightRect });
+  const rightColDetection = await cropBuffer({
+    image: listCropDetection,
+    ...rightRect,
+  });
+  const rightColText = await cropBuffer({ image: listCropText, ...rightRect });
 
   const rightOcr = await recognizeText({
     worker: params.worker,
-    image: rightCol,
+    image: rightColText,
     psm: '4', // SINGLE_COLUMN
     whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz',
   });
@@ -571,7 +575,7 @@ export async function extractWeeklyScheduleDraftShifts(params: {
   const projectedYs =
     workingYsFromWords.length === 0 && workingCountFromText > 0
       ? await detectRowCentersByProjection({
-          image: rightCol,
+          image: rightColDetection,
           expectedCount: workingCountFromText,
         })
       : [];
